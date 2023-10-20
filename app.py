@@ -1,9 +1,9 @@
-from langchain.llms import ChatOpenAI
+from langchain.llms import OpenAI
 from langchain.prompts import ChatPromptTemplate
 from database_connection import DatabaseConnection
 import re
 
-llm = ChatOpenAI(openai_api_key='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', temperature=0, model=)
+llm = OpenAI(openai_api_key='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', temperature=0)
 
 init_template = "Du bist ein Datenbankexperte der Wissen über eine Datenbanktabelle table_view_field_definition hat. Die Tabelle hat folgende Attribute: DatabaseName, ModelCode, EntityClassCode, EntityStereotype, Comment. Das Attribut EntityClassCode ist wie folgt aufgebaut: Präfix_SAP-Tabellenname_SAP-System."
 dialog_template_1 = "Bitte gebe eine SQL Abfrage aus mit der sich überprüfen lässt, ob das SAP-System B2 bereits in der Tabelle enthalten ist."
@@ -44,6 +44,10 @@ while True:
         print("System {name} is modelled".format(name=user_input))
     else:
         print("System {name} is not modelled".format(name=user_input))
+
+    interface_sql_code = "SELECT COUNT(*) from interface_definition WHERE ObjectName LIKE '%{}'"
+    views = db_connection.execute_query(interface_sql_code.format(user_input))
+    print(views)
 
     next_system = input("Soll ein weiteres System gesucht werden? (y/n)")
     if next_system.lower() == "n" or next_system.lower() == "no":
