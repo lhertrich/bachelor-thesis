@@ -16,7 +16,7 @@ sap_system = "D4"
 df = pd.read_csv('View_Data_Information.csv', sep=';')
 df = df[['SchemaID', 'ObjectName', 'ObjectSQLCode_First_32767_Characters']]
 df = df.rename(columns={'ObjectSQLCode_First_32767_Characters': 'ViewDescription'})
-df = df.iloc[0:5]
+df = df.iloc[0:2]
 
 # Embedding function (from OpenAI Docs)
 def get_embedding(text, model="text-embedding-ada-002"):
