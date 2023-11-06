@@ -16,7 +16,7 @@ test_collection = client.get_or_create_collection(name="test_collection", embedd
 """
 pattern = r'^[^_]*_[^_]*_[A-Za-z0-9]{2}$'
 # Get relevant data from csv
-df = pd.read_csv('View_Data_Information.csv', sep=';')
+df = pd.read_csv('data/View_Data_Information.csv', sep=';')
 df = df[['SchemaID', 'ObjectName', 'ObjectSQLCode_First_32767_Characters']]
 df = df.rename(columns={'ObjectSQLCode_First_32767_Characters': 'ViewDescription'})
 df = df[df['ObjectName'].str.contains(r".*_[A-Za-z0-9]{2}$", regex=True)]
@@ -52,14 +52,15 @@ for index, row in test_df.iterrows():
         ]
     )
     print("response: ", response)
-    test_collection.add(documents=response['choices'][0]['message']['content'],
-                   metadatas=[{"ObjectName": row["ObjectName"], "SAP-System": row["ObjectName"][-2:]}],
+    test_collection.add(documents=row["ViewDescription"],
+                   metadatas=[{"ObjectName": row["ObjectName"], "SAP-System": row["ObjectName"][-2:], "View-Description": response['choices'][0]['message']['content']}],
                    ids=[str(row["SchemaID"])])
 """
-print(test_collection.get(include=["metadatas", "documents"]))
+#print(test_collection.get(include=["metadatas", "documents"]))
 
 
 result = test_collection.query(query_texts=['I want to get cost data for different sub companies'],
                                n_results=1)
-print(result["documents"][0][0])
 
+print("Documents: ",result["documents"][0][0])
+print("Beschreibung: ", result["metadatas"][0][0]["View-Description"])
