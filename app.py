@@ -8,7 +8,7 @@ collection = get_collection()
 # Header
 with st.container():
     st.title("View Finder")
-    st.subheader("Finde SAP-Systeme, die bereits in der Result Zone durch Views dargestellt werden und finde die relevantesten Views für einen Use Case")
+    st.subheader("Findet SAP-Systeme, die bereits im Access Layer durch Views dargestellt werden und findet die relevantesten Views für einen Use Case")
 
 def get_relevance_for_distance(distance):
     if -0.3 <= distance <= 0.3:
@@ -27,7 +27,7 @@ def show_results(result):
             st.subheader(f"{i+1}. Ergebnis")
             st.write("Relevanz: ", relevance)
             st.text(result["metadatas"][0][i]["View-Description"])
-            
+
             st.write("---")
       
         another_search_button = st.button("Search for another SAP-System", key="another_search_button")
@@ -57,7 +57,7 @@ def search_sap_system():
                     st.write(f"Es existieren noch keine Views für das SAP-System {sap_system}")
             elif sap_system:
                 st.write("Ungültiges SAP-System! SAP-Systeme müssen zwei Zeichen lang sein, z.B. 'D4'")        
-    
+
 search_sap_system()
 
 if "sap_system_valid" in st.session_state and st.session_state["sap_system_valid"] is not None:
