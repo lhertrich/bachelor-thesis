@@ -1,22 +1,40 @@
 import streamlit as st
+import openai
+import os
 from vector_database_setup import get_collection
 
 # Setup
+setup_messages = [
+        {"role": "system", "content": "Du bist ein Datenbankexperte, der nur Fragen über gegebene Daten und Datenstrukturen beantwortet und SQL Code schreibt und erklärt"},
+        {"role": "system", "content": """Gegeben ist eine Datenbank mit folgenden Attributen: 
+         SchemaName;SchemaID;DataCORELayer;ObjectName;ObjectID;ObjectType;ObjectTypeDescription;ObjectSQLCode_Anzahl_Character;ObjectSQLCode_First_32767_Characters
+         Dabei ist die ObjectID einzigartig, d.h. Einträge können darüber identifiziert werden.
+         Der ObjectName enthält das SAP-System aus dem die Daten stammen als Präfix in der Form *_SAP-System wobei SAP-Systeme immer zwei Zeichen lang sind
+         Die Datenbank heißt Interface_Definition.
+         """},
+         {"role": "system", "content": """
+          Ein SAP-System, z.B. D4 kann wie folgt abgefragt werden:
+          SELECT * FROM Interface_Definition WHERE ObjectName LIKE "%_D4"
+          """}
+    ]
+
 st.set_page_config(page_title="Bosch Data Prototype")
 collection = get_collection()
+openai.api_key = os.environ.get('OPENAI_API_KEY')
 if 'sap_system' not in st.session_state:
     st.session_state.sap_system = ''
 if 'use_case' not in st.session_state:
     st.session_state.use_case = ''
-
-# Header
-with st.container():
-    st.title("View Finder")
-    st.subheader("Findet SAP-Systeme, die bereits im Access Layer durch Views dargestellt werden und findet die relevantesten Views für einen Use Case")
+if 'messages' not in st.session_state:
+    st.session_state.messages = setup_messages
+if 'user_input' not in st.session_state:
+    st.session_state.user_input = ''
 
 def reset_inputs():
     st.session_state["sap_system"] = ''
     st.session_state["use_case"] = ''
+    st.session_state["messages"] = setup_messages
+    st.session_state["user_input"] = ''
 
 def get_relevance_for_distance(distance):
     if 0 <= distance <= 0.16:
@@ -26,7 +44,28 @@ def get_relevance_for_distance(distance):
     else:
         return "Gering"
 
-def show_results(result):
+def update_chat():
+    user_input = st.session_state.user_input
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        response = openai.ChatCompletion.create(
+                model = "gpt-3.5-turbo",
+                temperature = 0,
+                messages = st.session_state.messages
+            )
+        st.session_state.messages.append({"role": "assistant", "content": response["choices"][0]["message"]["content"]})
+
+        st.session_state.user_input = ""
+
+def display_chat():
+    with st.container():
+        for message in st.session_state.messages[3:]:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+        st.text_input("Stelle Fragen zu SQL oder der Datenbank", key="user_input", on_change=update_chat)
+        st.divider()
+
+def display_results(result):
     with st.container():
         if len(result["ids"][0]) == 0:
             st.title("Keine Ergebnisse")
@@ -44,8 +83,14 @@ def show_results(result):
             with st.expander("Originalbeschreibung"):
                 st.write(result["documents"][0][i])
             st.write("---")
-      
-        st.button("Reset", on_click=reset_inputs)
+
+def show_results(result):
+    tab_result, tab_chat = st.tabs(["Ergebnis", "Chatbot"])
+    with tab_result:
+        display_results(result)
+    with tab_chat:
+        display_chat()
+    st.button("Reset", on_click=reset_inputs)
 
 def query_sap_system(sap_system: str) -> []:
     return collection.get(where={"SAP-System": sap_system})
@@ -56,6 +101,11 @@ def query_use_case(use_case: str, sap_system: str = None, number_of_views: int =
     else:
         return collection.query(query_texts=[use_case], n_results=number_of_views)
 
+# Header
+with st.container():
+    st.title("View Finder")
+    st.subheader("Findet SAP-Systeme, die bereits im Access Layer durch Views dargestellt werden und findet die relevantesten Views für einen Use Case")
+
 with st.form("input_form"):
     header = st.columns([2, 2])
     header[0].subheader("SAP-System das gesucht werden soll")
@@ -63,7 +113,7 @@ with st.form("input_form"):
     input_row = st.columns([2, 2])
     sap_system = input_row[0].text_input("SAP-System", key="sap_system")
     use_case = input_row[1].text_area("Kurzbeschreibung", key="use_case")
-    number_of_views = st.selectbox("Wie viele Ergebnisse sollen angezeigt werden?", (1, 2, 3, 4, 5))
+    number_of_views = input_row[1].selectbox("Wie viele Ergebnisse sollen angezeigt werden?", (1, 2, 3, 4, 5))
     submit = st.form_submit_button(label="Suchen")
 
 with st.container():
@@ -85,5 +135,5 @@ with st.container():
         if len(sap_system) > 0:
             use_case_result = query_use_case(use_case, sap_system, number_of_views)
         else:
-            use_case_result = query_use_case(use_case, number_of_views)
+            use_case_result = query_use_case(use_case, number_of_views=number_of_views)
         show_results(use_case_result)
