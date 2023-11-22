@@ -14,7 +14,7 @@ def get_collection():
     if client is None:
         # Get client     
         client = chromadb.PersistentClient(path="/Users/levin/Documents/Uni/6. Semester/Bachelorarbeit/Prototyping/prototype 2.0/chromadb")
-    collection = client.get_or_create_collection(name='bosch_data_v2', embedding_function=openai_ef, metadata={"hnsw:space": "cosine"})
+    collection = client.get_or_create_collection(name='bosch_data', embedding_function=openai_ef, metadata={"hnsw:space": "cosine"})
     return collection
 
 if __name__ == '__main__':
