@@ -14,7 +14,7 @@ def get_collection():
     if client is None:
         # Get client     
         client = chromadb.PersistentClient(path="/Users/levin/Documents/Uni/6. Semester/Bachelorarbeit/Prototyping/prototype 2.0/chromadb")
-    collection = client.get_or_create_collection(name='bosch_data', embedding_function=openai_ef, metadata={"hnsw:space": "cosine"})
+    collection = client.get_or_create_collection(name='bosch_data_v2', embedding_function=openai_ef, metadata={"hnsw:space": "cosine"})
     return collection
 
 if __name__ == '__main__':
@@ -30,12 +30,13 @@ if __name__ == '__main__':
     df = df[['ObjectID', 'ObjectName', 'ObjectSQLCode_First_32767_Characters']]
     df = df.rename(columns={'ObjectSQLCode_First_32767_Characters': 'ViewDescription'})
     df = df[df['ObjectName'].str.contains(r".*_[A-Za-z0-9]{2}$", regex=True)]
-    df_d4 = df[df['ObjectName'].str.contains(r".*_D4$", regex=True)]
-    df_d3 = df[df['ObjectName'].str.contains(r".*_D3$", regex=True)]
-    df_g0 = df[df['ObjectName'].str.contains(r".*_G0$", regex=True)]
-    df_g6 = df[df['ObjectName'].str.contains(r".*_G6$", regex=True)]
-    df_m2 = df[df['ObjectName'].str.contains(r".*_M2$", regex=True)]
-    complete_df = pd.concat([df_d4.iloc[0:5], df_d3.iloc[0:5], df_g0.iloc[0:5], df_g6.iloc[0:5], df_m2.iloc[0:5]], ignore_index=True)
+    #df_d4 = df[df['ObjectName'].str.contains(r".*_D4$", regex=True)]
+    #df_d3 = df[df['ObjectName'].str.contains(r".*_D3$", regex=True)]
+    #df_g0 = df[df['ObjectName'].str.contains(r".*_G0$", regex=True)]
+    #df_g6 = df[df['ObjectName'].str.contains(r".*_G6$", regex=True)]
+    #df_m2 = df[df['ObjectName'].str.contains(r".*_M2$", regex=True)]
+    #complete_df = pd.concat([df_d4.iloc[0:5], df_d3.iloc[0:5], df_g0.iloc[0:5], df_g6.iloc[0:5], df_m2.iloc[0:5]], ignore_index=True)
+    complete_df = df
     complete_df.to_csv('data/protoype_view_data.csv', sep=';', index=False)
 
     init_template = "Du bist ein Datenbankexperte, der die wichtigsten Informationen aus einer Beschreibung zu einer View extrahieren und sinnvoll darstellen kann"
@@ -49,8 +50,10 @@ if __name__ == '__main__':
     """
     chat_template_3 = "Bitte extrahiere den Namen der View, die Beschreibung, Links zur internen Dokumentation, das Outgoing Interface und Restrictions aus dem folgenden Text falls vorhanden. Gebe bei den Links nur die Links ohne weitere Zusätze an. Stelle die Informationen Stichpunktartig dar, ohne Bullet Points oder ähnliches zu verwenden: {system}"
 
+    counter = 0
     for index, row in complete_df.iterrows():
         formated_chat_3 = chat_template_3.format(system=row['ViewDescription'])
+        print("Going to call OpenAI API")
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             temperature = 0,
@@ -61,7 +64,8 @@ if __name__ == '__main__':
                 {"role": "user", "content": formated_chat_3}
             ]
         )
-        print("Called OpenAI API")
+        counter = counter + 1
+        print("Called OpenAI API, counter: ", counter)
         collection.add(documents=row["ViewDescription"],
                    metadatas=[{"ObjectName": row["ObjectName"], "SAP-System": row["ObjectName"][-2:], "View-Description": response['choices'][0]['message']['content']}],
                    ids=[str(row["ObjectID"])])
