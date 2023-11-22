@@ -22,8 +22,8 @@ if __name__ == '__main__':
     openai.api_key = os.environ.get('OPENAI_API_KEY')
     openai_ef = embedding_functions.OpenAIEmbeddingFunction(model_name="text-embedding-ada-002")
     client = chromadb.PersistentClient(path="/Users/levin/Documents/Uni/6. Semester/Bachelorarbeit/Prototyping/prototype 2.0/chromadb")
-    client.delete_collection('bosch_data')
-    collection = client.get_or_create_collection(name='bosch_data', embedding_function=openai_ef, metadata={"hnsw:space": "cosine"})
+    #client.delete_collection('bosch_data')
+    collection = client.get_or_create_collection(name='bosch_data_v2', embedding_function=openai_ef, metadata={"hnsw:space": "cosine"})
 
     # Get relevant data from csv
     df = pd.read_csv('data/View_Data_Information.csv', sep=';')
